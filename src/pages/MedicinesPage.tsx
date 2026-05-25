@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Pill, Plus, Edit2, Trash2, AlertCircle } from 'lucide-react';
+import { Pill, Plus, CreditCard as Edit2, Trash2, CircleAlert as AlertCircle, Camera } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import type { Medicine } from '../lib/supabase';
 import { Button, Card } from '../components/Card';
+import { CameraScanner } from '../components/CameraScanner';
 
 export function MedicinesPage() {
   const { user } = useAuth();
@@ -18,6 +19,22 @@ export function MedicinesPage() {
     pill_count: 0,
     refill_threshold: 10,
   });
+  const [showScanner, setShowScanner] = useState(false);
+  const [hasCamera, setHasCamera] = useState<boolean | null>(null);
+
+  // Check camera availability on mount
+  useEffect(() => {
+    async function checkCamera() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const hasVideoDevice = devices.some(device => device.kind === 'videoinput');
+        setHasCamera(hasVideoDevice);
+      } catch {
+        setHasCamera(false);
+      }
+    }
+    checkCamera();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -102,6 +119,14 @@ export function MedicinesPage() {
       refill_threshold: medicine.refill_threshold,
     });
     setShowModal(true);
+  }
+
+  function handleScanCapture(name: string, dosage: string) {
+    setFormData(prev => ({
+      ...prev,
+      name: name || prev.name,
+      dosage: dosage || prev.dosage,
+    }));
   }
 
   if (loading) {
@@ -204,6 +229,26 @@ export function MedicinesPage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
               {editingMedicine ? 'Edit Medicine' : 'Add Medicine'}
             </h2>
+
+            {/* Scan button - only show when adding new medicine and camera available */}
+            {!editingMedicine && hasCamera && (
+              <button
+                type="button"
+                onClick={() => setShowScanner(true)}
+                className="w-full mb-4 px-4 py-3 bg-teal-50 text-teal-700 rounded-lg hover:bg-teal-100 transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                <Camera className="w-5 h-5" />
+                Scan Medicine Strip
+              </button>
+            )}
+
+            {/* Camera not available message */}
+            {!editingMedicine && hasCamera === false && (
+              <div className="w-full mb-4 px-4 py-3 bg-gray-100 text-gray-500 rounded-lg text-center text-sm">
+                Camera not available on this device.
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -293,6 +338,13 @@ export function MedicinesPage() {
           </div>
         </div>
       )}
+
+      {/* Camera Scanner Modal */}
+      <CameraScanner
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onCapture={handleScanCapture}
+      />
     </div>
   );
 }
