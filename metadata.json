@@ -1,6 +1,0 @@
-{
-  "name": "MedRemind",
-  "description": "Medicine reminder and refill tracking app to coordinate care.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
